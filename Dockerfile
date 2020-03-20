@@ -33,6 +33,8 @@ COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs
 COPY --from=fetch-assets /Caddyfile /etc/caddy/Caddyfile
 COPY --from=fetch-assets /index.html /usr/share/caddy/index.html
 
+RUN chmod +x /usr/bin/caddy
+
 ARG VCS_REF
 ARG VERSION
 LABEL org.opencontainers.image.revision=$VCS_REF
