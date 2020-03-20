@@ -1,4 +1,4 @@
-FROM golang:1.13.8-alpine as builder
+FROM golang:alpine as builder
 
 ARG CADDY_SOURCE_VERSION=v1.0.4
 
@@ -8,12 +8,12 @@ RUN apk add --no-cache \
     git \
     ca-certificates && \
     git clone -b $CADDY_SOURCE_VERSION https://github.com/caddyserver/caddy.git --single-branch && \
-    cd /src/caddy && \
+    cd /src/caddy/caddy && \
     CGO_ENABLED=0 GOOS=linux GOARCH=amd64 \
     go build -trimpath -tags netgo -ldflags '-extldflags "-static" -s -w' -o /usr/bin/caddy
 
 # Fetch the latest default welcome page and default Caddy config
-FROM alpine:3.11.3 AS fetch-assets
+FROM alpine AS fetch-assets
 
 RUN apk add --no-cache git
 
@@ -25,15 +25,13 @@ RUN git clone https://github.com/caddyserver/dist . && \
     cp config/Caddyfile /Caddyfile && \
     cp welcome/index.html /index.html
 
-FROM alpine:3.11.3 AS alpine
+FROM alpine AS alpine
 
 COPY --from=builder /usr/bin/caddy /usr/bin/caddy
 COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs
 
 COPY --from=fetch-assets /Caddyfile /etc/caddy/Caddyfile
 COPY --from=fetch-assets /index.html /usr/share/caddy/index.html
-
-RUN chmod +x /usr/bin/caddy
 
 ARG VCS_REF
 ARG VERSION
@@ -51,4 +49,4 @@ EXPOSE 80
 EXPOSE 443
 EXPOSE 2019
 
-CMD ["caddy", "run", "--config", "/etc/caddy/Caddyfile", "--adapter", "caddyfile"]
+CMD ["caddy", "-agree", "-conf", "/etc/caddy/Caddyfile"]
